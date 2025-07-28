@@ -1,0 +1,76 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <map>
+#include <cmath>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+using namespace std;
+
+// Function to decode a number from a given base
+unsigned long long decode_value(const string& value, int base) {
+    unsigned long long result = 0;
+    for (char digit : value) {
+        result *= base;
+        if (isdigit(digit)) {
+            result += digit - '0';
+        } else {
+            result += digit - 'a' + 10; // For bases > 10
+        }
+    }
+    return result;
+}
+
+// Function to calculate the constant term c using Lagrange interpolation
+unsigned long long calculate_constant_term(const vector<pair<int, unsigned long long>>& points, int k) {
+    unsigned long long c = 0;
+    int n = points.size();
+
+    for (int i = 0; i < k; ++i) {
+        unsigned long long xi = points[i].first;
+        unsigned long long yi = points[i].second;
+
+        // Calculate the Lagrange basis polynomial
+        unsigned long long term = yi;
+        for (int j = 0; j < k; ++j) {
+            if (i != j) {
+                term *= (0 - points[j].first);
+                term /= (xi - points[j].first);
+            }
+        }
+        c += term;
+    }
+    return c;
+}
+
+int main() {
+    // Read JSON input from file
+    ifstream input_file("input.json");
+    json input_data;
+    input_file >> input_data;
+
+    // Extract keys
+    int n = input_data["keys"]["n"];
+    int k = input_data["keys"]["k"];
+
+    vector<pair<int, unsigned long long>> points;
+
+    // Decode the values
+    for (int i = 1; i <= n; ++i) {
+        int base = stoi(input_data[to_string(i)]["base"].get<string>());
+        string value = input_data[to_string(i)]["value"].get<string>();
+        unsigned long long decoded_value = decode_value(value, base);
+        points.emplace_back(i, decoded_value);
+    }
+
+    // Calculate the constant term c
+    unsigned long long constant_term = calculate_constant_term(points, k);
+
+    // Output the result
+    cout << "The constant term c of the polynomial is: " << constant_term << endl;
+
+    return 0;
+}
